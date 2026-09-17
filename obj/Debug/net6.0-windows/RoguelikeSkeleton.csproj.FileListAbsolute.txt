@@ -1,0 +1,15 @@
+D:\roguechud csharp\bin\Debug\net6.0-windows\RoguelikeSkeleton.exe
+D:\roguechud csharp\bin\Debug\net6.0-windows\RoguelikeSkeleton.deps.json
+D:\roguechud csharp\bin\Debug\net6.0-windows\RoguelikeSkeleton.runtimeconfig.json
+D:\roguechud csharp\bin\Debug\net6.0-windows\RoguelikeSkeleton.dll
+D:\roguechud csharp\bin\Debug\net6.0-windows\RoguelikeSkeleton.pdb
+D:\roguechud csharp\obj\Debug\net6.0-windows\RoguelikeSkeleton.csproj.AssemblyReference.cache
+D:\roguechud csharp\obj\Debug\net6.0-windows\RoguelikeSkeleton.GeneratedMSBuildEditorConfig.editorconfig
+D:\roguechud csharp\obj\Debug\net6.0-windows\RoguelikeSkeleton.AssemblyInfoInputs.cache
+D:\roguechud csharp\obj\Debug\net6.0-windows\RoguelikeSkeleton.AssemblyInfo.cs
+D:\roguechud csharp\obj\Debug\net6.0-windows\RoguelikeSkeleton.csproj.CoreCompileInputs.cache
+D:\roguechud csharp\obj\Debug\net6.0-windows\RoguelikeSkeleton.dll
+D:\roguechud csharp\obj\Debug\net6.0-windows\refint\RoguelikeSkeleton.dll
+D:\roguechud csharp\obj\Debug\net6.0-windows\RoguelikeSkeleton.pdb
+D:\roguechud csharp\obj\Debug\net6.0-windows\RoguelikeSkeleton.genruntimeconfig.cache
+D:\roguechud csharp\obj\Debug\net6.0-windows\ref\RoguelikeSkeleton.dll
