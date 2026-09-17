@@ -78,4 +78,4 @@ RoguelikeSkeleton/
    or list of `Map`s instead of just one.
 
 
-   AI generated README. Everything else is written and coded by hand. For full transparency.
+   AI generated README, and code comments. Everything else is written and coded by hand. For full transparency.
