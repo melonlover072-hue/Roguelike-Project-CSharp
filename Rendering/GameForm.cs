@@ -153,36 +153,66 @@ public class GameForm : Form
         g.DrawString(glyph.ToString(), _font, brush, x * _cellWidth, y * _cellHeight);
     }
 
-    private void DrawMessageLog(Graphics g)
+ private void DrawMessageLog(Graphics g)
+{
+    int x0 = _game.Map.Width * _cellWidth;
+    int height = _game.Map.Height * _cellHeight;
+
+    using (var bg = new SolidBrush(Color.FromArgb(14, 14, 18)))
+        g.FillRectangle(bg, x0, 0, LogPanelCells * _cellWidth, height);
+
+    using (var pen = new Pen(Color.FromArgb(50, 50, 60)))
+        g.DrawLine(pen, x0, 0, x0, height);
+
+    const int maxChars = LogPanelCells - 1;
+    int maxLines = _game.Map.Height;
+
+    var lines = new List<(string Text, Color Color)>();
+
+    foreach (var message in _game.Log.Messages)
     {
-        int x0 = _game.Map.Width * _cellWidth;
-        int height = _game.Map.Height * _cellHeight;
+        string remaining = message.Text;
 
-        using (var bg = new SolidBrush(Color.FromArgb(14, 14, 18)))
-            g.FillRectangle(bg, x0, 0, LogPanelCells * _cellWidth, height);
-
-        using (var pen = new Pen(Color.FromArgb(50, 50, 60)))
-            g.DrawLine(pen, x0, 0, x0, height);
-
-        // Stack the most recent messages from the top, newest at the
-        // bottom line, truncating anything longer than the panel.
-        const int maxChars = LogPanelCells - 1;
-        int maxLines = _game.Map.Height;
-        var messages = _game.Log.Messages;
-        int count = Math.Min(messages.Count, maxLines);
-
-        for (int i = 0; i < count; i++)
+        while (remaining.Length > maxChars)
         {
-            var message = messages[messages.Count - count + i];
-            string text = message.Text.Length > maxChars
-                ? message.Text.Substring(0, maxChars)
-                : message.Text;
+            int breakAt = remaining.LastIndexOf(' ', maxChars);
 
-            using var brush = new SolidBrush(message.Color);
-            g.DrawString(text, _font, brush, x0 + 6, i * _cellHeight);
+            if (breakAt <= 0)
+                breakAt = maxChars;
+
+            lines.Add((
+                remaining.Substring(0, breakAt),
+                message.Color
+            ));
+
+            remaining = remaining.Substring(
+                breakAt == maxChars ? breakAt : breakAt + 1
+            );
+        }
+
+        if (remaining.Length > 0)
+        {
+            lines.Add((remaining, message.Color));
         }
     }
 
+    // Keep only the newest lines that fit.
+    int start = Math.Max(0, lines.Count - maxLines);
+
+    for (int i = start; i < lines.Count; i++)
+    {
+        var line = lines[i];
+
+        using var brush = new SolidBrush(line.Color);
+        g.DrawString(
+            line.Text,
+            _font,
+            brush,
+            x0 + 6,
+            (i - start) * _cellHeight
+        );
+    }
+}
     private void DrawStatusBar(Graphics g)
     {
         int y = _game.Map.Height * _cellHeight;
@@ -193,7 +223,7 @@ public class GameForm : Form
         string status = $"Depth {_game.Depth}   " +
                         $"HP {_game.Player.Health}/{_game.Player.MaxHealth}   " +
                         $"Items: {_game.Player.Inventory.Count}   " +
-                        "WASD move, G grab, ,/. stairs, Space wait, Esc quit";
+                        "WASD move, G grab, ,/. stairs, Space wait, Esc quit, Q quaff";
         g.DrawString(status, _font, textBrush, 6, y + 4);
     }
 

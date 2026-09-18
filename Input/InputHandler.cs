@@ -15,6 +15,7 @@ public static class InputHandler
         Keys.Left or Keys.A => new MoveCommand(-1, 0),
         Keys.Right or Keys.D => new MoveCommand(1, 0),
         Keys.G => new PickUpCommand(),
+        Keys.Q => new QuaffCommand(),
         Keys.OemPeriod => new DescendCommand(), // '.' or '>'
         Keys.Oemcomma => new AscendCommand(),   // ',' or '<'
         Keys.Space => new WaitCommand(),

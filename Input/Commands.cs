@@ -85,3 +85,37 @@ public class WaitCommand : ICommand
     // Passing a turn still costs a turn - the world keeps ticking while you wait.
     public bool Execute(Game game) => true;
 }
+public class QuaffCommand : ICommand
+{
+    public bool Execute(Game game)
+    {
+        if (game.Player.Health >= game.Player.MaxHealth)
+        {
+            game.Log.Add("You are already at full health.", Color.Gray);
+            return false;
+        }
+
+        var potion = game.Player.Inventory
+            .FirstOrDefault(item => item.HealAmount > 0);
+
+        if (potion is null)
+        {
+            game.Log.Add("You have no potions to drink.", Color.Gray);
+            return false;
+        }
+
+        game.Player.Health = Math.Min(
+            game.Player.Health + potion.HealAmount,
+            game.Player.MaxHealth
+        );
+
+        game.Player.Inventory.Remove(potion);
+
+        game.Log.Add(
+            $"You quaff the {potion.Name} and recover {potion.HealAmount} health.",
+            Color.Magenta
+        );
+
+        return true;
+    }
+}
