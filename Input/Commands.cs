@@ -69,8 +69,19 @@ public class PickUpCommand : ICommand
     }
 }
 
+public class DescendCommand : ICommand
+{
+    // Going deeper always costs a turn (if there are stairs to take).
+    public bool Execute(Game game) => game.TryChangeLevel(+1);
+}
+
+public class AscendCommand : ICommand
+{
+    public bool Execute(Game game) => game.TryChangeLevel(-1);
+}
+
 public class WaitCommand : ICommand
 {
-    // Passing a turn still costs a turn - monsters keep moving while you wait.
+    // Passing a turn still costs a turn - the world keeps ticking while you wait.
     public bool Execute(Game game) => true;
 }

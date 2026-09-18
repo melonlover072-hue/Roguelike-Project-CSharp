@@ -100,11 +100,7 @@ public class GameForm : Form
                 if (!tile.Explored)
                     continue;
 
-                var color = tile.Visible
-                    ? (tile.Type == TileType.Wall ? Color.DimGray : Color.Gray)
-                    : (tile.Type == TileType.Wall ? Color.FromArgb(28, 28, 34)
-                                                  : Color.FromArgb(18, 18, 22));
-                DrawGlyph(g, tile.Glyph, x, y, color);
+                DrawGlyph(g, tile.Glyph, x, y, TileColor(tile));
             }
         }
 
@@ -129,6 +125,26 @@ public class GameForm : Form
 
         if (_gameOver)
             DrawGameOverOverlay(g);
+    }
+
+    private static Color TileColor(Tile tile)
+    {
+        if (tile.Visible)
+        {
+            return tile.Type switch
+            {
+                TileType.Wall => Color.DimGray,
+                TileType.StairsUp or TileType.StairsDown => Color.White,
+                _ => Color.Gray,
+            };
+        }
+
+        return tile.Type switch
+        {
+            TileType.Wall => Color.FromArgb(28, 28, 34),
+            TileType.StairsUp or TileType.StairsDown => Color.FromArgb(60, 60, 66),
+            _ => Color.FromArgb(18, 18, 22),
+        };
     }
 
     private void DrawGlyph(Graphics g, char glyph, int x, int y, Color color)
@@ -174,9 +190,10 @@ public class GameForm : Form
         g.FillRectangle(bg, 0, y, ClientSize.Width, StatusBarHeight);
 
         using var textBrush = new SolidBrush(Color.White);
-        string status = $"HP {_game.Player.Health}/{_game.Player.MaxHealth}   " +
+        string status = $"Depth {_game.Depth}   " +
+                        $"HP {_game.Player.Health}/{_game.Player.MaxHealth}   " +
                         $"Items: {_game.Player.Inventory.Count}   " +
-                        "WASD/Arrows move, G pick up, Space wait, Esc quit";
+                        "WASD move, G grab, ,/. stairs, Space wait, Esc quit";
         g.DrawString(status, _font, textBrush, 6, y + 4);
     }
 

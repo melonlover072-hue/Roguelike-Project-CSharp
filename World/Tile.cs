@@ -3,7 +3,9 @@ namespace RoguelikeSkeleton.World;
 public enum TileType
 {
     Wall,
-    Floor
+    Floor,
+    StairsUp,
+    StairsDown
 }
 
 public struct Tile
@@ -19,12 +21,15 @@ public struct Tile
         Visible = false;
     }
 
-    public readonly bool IsWalkable => Type == TileType.Floor;
+    public readonly bool IsWalkable =>
+        Type is TileType.Floor or TileType.StairsUp or TileType.StairsDown;
 
     public readonly char Glyph => Type switch
     {
         TileType.Wall => '#',
         TileType.Floor => '.',
+        TileType.StairsUp => '<',
+        TileType.StairsDown => '>',
         _ => ' '
     };
 }

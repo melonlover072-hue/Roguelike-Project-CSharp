@@ -18,6 +18,8 @@ public class Player : Entity
         Name = "Player";
         Health = MaxHealth = 20;
         AttackPower = 3;
+        Speed = 100;
+        Energy = 100; // start ready to act
     }
 
     /// <summary>Attempts to move by (dx, dy). Returns false if blocked, so the

@@ -33,7 +33,7 @@ public static class FieldOfView
                 int dy = y - originY;
                 if (dx * dx + dy * dy > radiusSquared)
                     continue;
-                if (!HasLineOfSight(map, originX, originY, x, y))
+                if (!CanSee(map, originX, originY, x, y))
                     continue;
 
                 map.SetVisible(x, y, visible: true);
@@ -45,9 +45,9 @@ public static class FieldOfView
     /// <summary>
     /// True if nothing blocks the straight line between the two points.
     /// The target tile itself never blocks, so wall faces the viewer stands
-    /// next to are still drawn.
+    /// next to are still drawn. Also handy for monster perception checks.
     /// </summary>
-    private static bool HasLineOfSight(Map map, int x0, int y0, int x1, int y1)
+    public static bool CanSee(Map map, int x0, int y0, int x1, int y1)
     {
         int dx = Math.Abs(x1 - x0);
         int sx = x0 < x1 ? 1 : -1;

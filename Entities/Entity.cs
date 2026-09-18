@@ -19,6 +19,13 @@ public abstract class Entity
     public int Health { get; set; } = 1;
     public int MaxHealth { get; set; } = 1;
     public int AttackPower { get; set; } = 1;
+
+    // Initiative: Speed is how much energy an entity regains per world tick
+    // (100 = acts every tick; 200 = acts twice; 50 = every other tick).
+    // Energy is the entity's current banked action points.
+    public int Speed { get; set; } = 100;
+    public int Energy { get; set; }
+
     public bool IsAlive => Health > 0;
 
     protected Entity(int x, int y)
@@ -28,9 +35,9 @@ public abstract class Entity
     }
 
     /// <summary>
-    /// Called once per game turn, after the player has acted. Override this
-    /// for monster AI. The player's own movement is driven directly by input
-    /// commands instead, so Player doesn't need to override this.
+    /// Called when this entity has banked enough energy to act. Override
+    /// this for monster AI. The player's own actions are driven directly by
+    /// input commands instead, so Player doesn't need to override this.
     /// </summary>
     public virtual void TakeTurn(Game game) { }
 }
