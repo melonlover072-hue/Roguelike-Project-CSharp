@@ -61,20 +61,15 @@ RoguelikeSkeleton/
 
 ## Natural next steps, roughly in order of how much they unlock
 
-1. **Field of view / fog of war** — only render tiles the player has line of
-   sight to. `Tile.Explored` is already there waiting for this.
-2. **Combat** — give `Player` an attack action, add a `MeleeAttackCommand`
-   that resolves damage against whatever `Entity` occupies the target tile.
-3. **Items & inventory** — a new `Item` class, plus a `PickUpCommand`.
-4. **A message log** — a scrolling panel/list of recent events ("Goblin
+1. **A message log** — a scrolling panel/list of recent events ("Goblin
    hits you for 2 damage") instead of just the HP in the status bar.
-5. **Better monster AI** — swap the random wander in `Monster.TakeTurn` for
+2. **Better monster AI** — swap the random wander in `Monster.TakeTurn` for
    simple chase-the-player-if-visible logic, then real pathfinding (A*)
    later.
-6. **Turn order / initiative** — right now every monster acts once per
-   player turn in list order. An energy/initiative system lets you have
+3. **Turn order / initiative** — right now every monster acts once per
+   player turn in list order. An energy/initiative systgiem lets you have
    fast and slow monsters.
-7. **Multiple dungeon levels** — stairs down/up, and `Game` holding a stack
+4. **Multiple dungeon levels** — stairs down/up, and `Game` holding a stack
    or list of `Map`s instead of just one.
 
 

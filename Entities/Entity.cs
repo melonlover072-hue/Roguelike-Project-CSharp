@@ -18,6 +18,7 @@ public abstract class Entity
 
     public int Health { get; set; } = 1;
     public int MaxHealth { get; set; } = 1;
+    public int AttackPower { get; set; } = 1;
     public bool IsAlive => Health > 0;
 
     protected Entity(int x, int y)

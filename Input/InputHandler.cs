@@ -14,6 +14,7 @@ public static class InputHandler
         Keys.Down or Keys.S => new MoveCommand(0, 1),
         Keys.Left or Keys.A => new MoveCommand(-1, 0),
         Keys.Right or Keys.D => new MoveCommand(1, 0),
+        Keys.G => new PickUpCommand(),
         Keys.Space => new WaitCommand(),
         _ => null // Unrecognized key: ignore it, don't spend a turn.
     };

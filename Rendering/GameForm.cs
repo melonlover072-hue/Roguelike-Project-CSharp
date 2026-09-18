@@ -17,6 +17,7 @@ namespace RoguelikeSkeleton.Rendering;
 public class GameForm : Form
 {
     private const int StatusBarHeight = 32;
+    private const int LogPanelCells = 30;
 
     private readonly Game _game;
     private readonly Font _font;
@@ -51,8 +52,9 @@ public class GameForm : Form
         StartPosition = FormStartPosition.CenterScreen;
         KeyPreview = true;
 
+        // The window is the map grid plus a side panel for the message log.
         ClientSize = new Size(
-            _game.Map.Width * _cellWidth,
+            (_game.Map.Width + LogPanelCells) * _cellWidth,
             _game.Map.Height * _cellHeight + StatusBarHeight);
 
         KeyDown += OnKeyDown;
@@ -92,14 +94,37 @@ public class GameForm : Form
             for (int x = 0; x < _game.Map.Width; x++)
             {
                 var tile = _game.Map.GetTile(x, y);
-                var color = tile.Type == TileType.Wall ? Color.DimGray : Color.Gray;
+
+                // Fog of war: never-seen tiles stay black; explored tiles are
+                // drawn dimmed unless they're currently in line of sight.
+                if (!tile.Explored)
+                    continue;
+
+                var color = tile.Visible
+                    ? (tile.Type == TileType.Wall ? Color.DimGray : Color.Gray)
+                    : (tile.Type == TileType.Wall ? Color.FromArgb(28, 28, 34)
+                                                  : Color.FromArgb(18, 18, 22));
                 DrawGlyph(g, tile.Glyph, x, y, color);
             }
         }
 
-        foreach (var entity in _game.AllEntities.Where(en => en.IsAlive))
-            DrawGlyph(g, entity.Glyph, entity.X, entity.Y, entity.Color);
+        foreach (var item in _game.Items)
+        {
+            if (!_game.Map.GetTile(item.X, item.Y).Visible)
+                continue;
+            DrawGlyph(g, item.Glyph, item.X, item.Y, item.Color);
+        }
 
+        foreach (var entity in _game.AllEntities.Where(en => en.IsAlive))
+        {
+            // Monsters only appear while in line of sight; the player
+            // obviously always sees themselves.
+            if (entity != _game.Player && !_game.Map.GetTile(entity.X, entity.Y).Visible)
+                continue;
+            DrawGlyph(g, entity.Glyph, entity.X, entity.Y, entity.Color);
+        }
+
+        DrawMessageLog(g);
         DrawStatusBar(g);
 
         if (_gameOver)
@@ -112,6 +137,36 @@ public class GameForm : Form
         g.DrawString(glyph.ToString(), _font, brush, x * _cellWidth, y * _cellHeight);
     }
 
+    private void DrawMessageLog(Graphics g)
+    {
+        int x0 = _game.Map.Width * _cellWidth;
+        int height = _game.Map.Height * _cellHeight;
+
+        using (var bg = new SolidBrush(Color.FromArgb(14, 14, 18)))
+            g.FillRectangle(bg, x0, 0, LogPanelCells * _cellWidth, height);
+
+        using (var pen = new Pen(Color.FromArgb(50, 50, 60)))
+            g.DrawLine(pen, x0, 0, x0, height);
+
+        // Stack the most recent messages from the top, newest at the
+        // bottom line, truncating anything longer than the panel.
+        const int maxChars = LogPanelCells - 1;
+        int maxLines = _game.Map.Height;
+        var messages = _game.Log.Messages;
+        int count = Math.Min(messages.Count, maxLines);
+
+        for (int i = 0; i < count; i++)
+        {
+            var message = messages[messages.Count - count + i];
+            string text = message.Text.Length > maxChars
+                ? message.Text.Substring(0, maxChars)
+                : message.Text;
+
+            using var brush = new SolidBrush(message.Color);
+            g.DrawString(text, _font, brush, x0 + 6, i * _cellHeight);
+        }
+    }
+
     private void DrawStatusBar(Graphics g)
     {
         int y = _game.Map.Height * _cellHeight;
@@ -120,7 +175,8 @@ public class GameForm : Form
 
         using var textBrush = new SolidBrush(Color.White);
         string status = $"HP {_game.Player.Health}/{_game.Player.MaxHealth}   " +
-                         "Arrows/WASD move, Space wait, Esc quit";
+                        $"Items: {_game.Player.Inventory.Count}   " +
+                        "WASD/Arrows move, G pick up, Space wait, Esc quit";
         g.DrawString(status, _font, textBrush, 6, y + 4);
     }
 

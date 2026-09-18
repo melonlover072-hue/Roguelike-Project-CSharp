@@ -27,6 +27,26 @@ public class Map
 
     public void SetTile(int x, int y, TileType type) => _tiles[x, y] = new Tile(type);
 
+    // Tile is a struct, so flags are updated copy-in/copy-out - GetTile
+    // would only hand back a read-only snapshot.
+    public void SetVisible(int x, int y, bool visible)
+    {
+        if (!InBounds(x, y))
+            return;
+        var tile = _tiles[x, y];
+        tile.Visible = visible;
+        _tiles[x, y] = tile;
+    }
+
+    public void SetExplored(int x, int y)
+    {
+        if (!InBounds(x, y))
+            return;
+        var tile = _tiles[x, y];
+        tile.Explored = true;
+        _tiles[x, y] = tile;
+    }
+
     public bool InBounds(int x, int y) => x >= 0 && x < Width && y >= 0 && y < Height;
 
     public bool IsWalkable(int x, int y) => InBounds(x, y) && _tiles[x, y].IsWalkable;
