@@ -7,22 +7,42 @@ namespace RoguelikeSkeleton.Entities;
 public class Monster : Entity
 {
     // How far the monster can spot the player. Seeing them inside this
-    // range switches it from wandering to chasing.
+    // range refreshes its memory of their position and triggers a chase.
     private const int PerceptionRange = 10;
 
     private readonly Random _rng = new();
 
+    // Where the monster last saw the player. It keeps hunting that spot
+    // even after losing line of sight, and gives up on arrival.
+    private (int x, int y)? _lastSeenPlayer;
+
     public Monster(int x, int y, string name = "Goblin", char glyph = 'g',
-                   int health = 5, int attackPower = 2, int speed = 100, Color? color = null)
+                   int health = 5, int damageMin = 1, int damageMax = 3,
+                   int attackBonus = 1, int armorClass = 11,
+                   int speed = 100, Color? color = null)
         : base(x, y)
     {
         Name = name;
         Glyph = glyph;
         Color = color ?? Color.IndianRed;
         Health = MaxHealth = health;
-        AttackPower = attackPower;
+        AttackBonus = attackBonus;
         Speed = speed;
+
+        // ArmorClass/Damage are virtual on Entity with no settable backing,
+        // so tuck the per-species values behind small overrides.
+        _armorClass = armorClass;
+        _damageMin = damageMin;
+        _damageMax = damageMax;
     }
+
+    private readonly int _armorClass;
+    private readonly int _damageMin;
+    private readonly int _damageMax;
+
+    public override int ArmorClass => _armorClass;
+    public override int DamageMin => _damageMin;
+    public override int DamageMax => _damageMax;
 
     public override void TakeTurn(Game game)
     {
@@ -36,17 +56,27 @@ public class Monster : Entity
             return;
         }
 
-        // Can perceive the player? Chase them, one greedy step at a time.
-        // No pathfinding yet - they get stuck on walls, which keeps doors
-        // and corridors tactically interesting for now.
+        // Can see the player? Remember where they are and hunt them.
         if (game.Player.IsAlive && CanPerceive(game, distX, distY))
         {
-            if (TryStep(game, Math.Sign(distX), Math.Sign(distY)))
-                return;
-            if (TryStep(game, Math.Sign(distX), 0))
-                return;
-            TryStep(game, 0, Math.Sign(distY));
+            _lastSeenPlayer = (game.Player.X, game.Player.Y);
+            Chase(game, _lastSeenPlayer.Value);
             return;
+        }
+
+        // Lost sight of them? Keep heading for the last known position,
+        // then give up and go back to wandering.
+        if (_lastSeenPlayer is { } memory)
+        {
+            if (X == memory.x && Y == memory.y)
+            {
+                _lastSeenPlayer = null;
+            }
+            else
+            {
+                Chase(game, memory);
+                return;
+            }
         }
 
         // Otherwise: placeholder wander AI.
@@ -60,6 +90,22 @@ public class Monster : Entity
         int range = Math.Max(Math.Abs(distX), Math.Abs(distY));
         return range <= PerceptionRange
             && FieldOfView.CanSee(game.Map, X, Y, game.Player.X, game.Player.Y);
+    }
+
+    // Follows an A* path toward the goal. If the next step is occupied by
+    // another monster, it waits a moment instead of bumping into it.
+    private void Chase(Game game, (int x, int y) goal)
+    {
+        var path = Pathfinding.FindPath(game.Map, X, Y, goal.x, goal.y);
+        if (path is null || path.Count == 0)
+            return;
+
+        var step = path[0];
+        if (game.EntityAt(step.x, step.y) is null)
+        {
+            X = step.x;
+            Y = step.y;
+        }
     }
 
     private bool TryStep(Game game, int dx, int dy)

@@ -58,31 +58,31 @@ public class MapGenerator
             rooms.Add(newRoom);
         }
 
-(int x, int y) start = rooms.Count > 0 ? rooms[0].Center : (width / 2, height / 2);
+        var start = rooms.Count > 0 ? rooms[0].Center : (x: width / 2, y: height / 2);
 
-// You arrive standing on the up-stairs; the way down goes in the
-// last (and usually farthest) room.
-(int x, int y) stairsUp = start;
-(int x, int y) stairsDown = start;
+        // You arrive standing on the up-stairs; the way down goes in the
+        // last (and usually farthest) room.
+        var stairsUp = start;
+        var stairsDown = start;
 
-if (rooms.Count > 1)
-{
-    stairsDown = rooms[^1].Center;
-}
-else
-{
-    // Degenerate single-room map: any floor tile that isn't the start.
-    for (int y = 1; y < height - 1 && stairsDown == start; y++)
-        for (int x = 1; x < width - 1 && stairsDown == start; x++)
-            if (map.IsWalkable(x, y) && (x, y) != start)
-                stairsDown = (x, y);
-}
+        if (rooms.Count > 1)
+        {
+            stairsDown = rooms[^1].Center;
+        }
+        else
+        {
+            // Degenerate single-room map: any floor tile that isn't the start.
+            for (int y = 1; y < height - 1 && stairsDown == start; y++)
+                for (int x = 1; x < width - 1 && stairsDown == start; x++)
+                    if (map.IsWalkable(x, y) && (x, y) != start)
+                        stairsDown = (x, y);
+        }
 
-map.SetTile(stairsUp.x, stairsUp.y, TileType.StairsUp);
-if (stairsDown != start)
-    map.SetTile(stairsDown.x, stairsDown.y, TileType.StairsDown);
+        map.SetTile(stairsUp.x, stairsUp.y, TileType.StairsUp);
+        if (stairsDown != start)
+            map.SetTile(stairsDown.x, stairsDown.y, TileType.StairsDown);
 
-return (map, start, stairsUp, stairsDown);
+        return (map, start, stairsUp, stairsDown);
     }
 
     private static void CarveRoom(Map map, Room room)

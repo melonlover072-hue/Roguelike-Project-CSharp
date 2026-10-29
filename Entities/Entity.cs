@@ -18,7 +18,15 @@ public abstract class Entity
 
     public int Health { get; set; } = 1;
     public int MaxHealth { get; set; } = 1;
-    public int AttackPower { get; set; } = 1;
+
+    // Combat: AttackBonus is added to the attacker's 1d20 roll and compared
+    // against the target's ArmorClass - equal or higher hits. Damage is a
+    // plain roll between DamageMin and DamageMax on a hit. The defaults are
+    // bare fists against unarmoured skin.
+    public int AttackBonus { get; set; }
+    public virtual int ArmorClass => 10;
+    public virtual int DamageMin => 1;
+    public virtual int DamageMax => 2;
 
     // Initiative: Speed is how much energy an entity regains per world tick
     // (100 = acts every tick; 200 = acts twice; 50 = every other tick).

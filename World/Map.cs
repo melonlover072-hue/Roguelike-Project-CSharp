@@ -1,3 +1,4 @@
+
 namespace RoguelikeSkeleton.World;
 
 /// <summary>
@@ -50,4 +51,10 @@ public class Map
     public bool InBounds(int x, int y) => x >= 0 && x < Width && y >= 0 && y < Height;
 
     public bool IsWalkable(int x, int y) => InBounds(x, y) && _tiles[x, y].IsWalkable;
+
+    internal void SetTile(object x, object y, TileType stairsDown)
+    {
+        throw new NotImplementedException();
+    }
+
 }

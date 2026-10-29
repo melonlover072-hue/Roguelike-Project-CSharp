@@ -20,6 +20,7 @@ public class GameForm : Form
     private const int LogPanelCells = 30;
 
     private readonly Game _game;
+    private readonly InputHandler _input = new();
     private readonly Font _font;
     private readonly int _cellWidth;
     private readonly int _cellHeight;
@@ -67,20 +68,28 @@ public class GameForm : Form
 
         if (e.KeyCode == Keys.Escape)
         {
+            // Esc cancels an in-progress item selection before closing.
+            if (_input.IsSelecting)
+            {
+                _input.CancelSelection();
+                Invalidate();
+                return;
+            }
+
             Close();
             return;
         }
 
-        var command = InputHandler.Translate(e.KeyCode);
-        if (command is null)
-            return;
+        var command = _input.Translate(e.KeyCode, _game);
+        if (command is not null)
+        {
+            _game.ExecuteTurn(command);
 
-        _game.ExecuteTurn(command);
+            if (!_game.Player.IsAlive)
+                _gameOver = true;
+        }
 
-        if (!_game.Player.IsAlive)
-            _gameOver = true;
-
-        Invalidate();
+        Invalidate(); // also refreshes the status bar prompt after mode changes
     }
 
     protected override void OnPaint(PaintEventArgs e)
@@ -153,66 +162,67 @@ public class GameForm : Form
         g.DrawString(glyph.ToString(), _font, brush, x * _cellWidth, y * _cellHeight);
     }
 
- private void DrawMessageLog(Graphics g)
-{
-    int x0 = _game.Map.Width * _cellWidth;
-    int height = _game.Map.Height * _cellHeight;
-
-    using (var bg = new SolidBrush(Color.FromArgb(14, 14, 18)))
-        g.FillRectangle(bg, x0, 0, LogPanelCells * _cellWidth, height);
-
-    using (var pen = new Pen(Color.FromArgb(50, 50, 60)))
-        g.DrawLine(pen, x0, 0, x0, height);
-
-    const int maxChars = LogPanelCells - 1;
-    int maxLines = _game.Map.Height;
-
-    var lines = new List<(string Text, Color Color)>();
-
-    foreach (var message in _game.Log.Messages)
+    private void DrawMessageLog(Graphics g)
     {
-        string remaining = message.Text;
+        int x0 = _game.Map.Width * _cellWidth;
+        int height = _game.Map.Height * _cellHeight;
 
-        while (remaining.Length > maxChars)
+        using (var bg = new SolidBrush(Color.FromArgb(14, 14, 18)))
+            g.FillRectangle(bg, x0, 0, LogPanelCells * _cellWidth, height);
+
+        using (var pen = new Pen(Color.FromArgb(50, 50, 60)))
+            g.DrawLine(pen, x0, 0, x0, height);
+
+        const int maxChars = LogPanelCells - 1;
+        int maxLines = _game.Map.Height;
+
+        var lines = new List<(string Text, Color Color)>();
+
+        foreach (var message in _game.Log.Messages)
         {
-            int breakAt = remaining.LastIndexOf(' ', maxChars);
+            string remaining = message.Text;
 
-            if (breakAt <= 0)
-                breakAt = maxChars;
+            while (remaining.Length > maxChars)
+            {
+                int breakAt = remaining.LastIndexOf(' ', maxChars);
 
-            lines.Add((
-                remaining.Substring(0, breakAt),
-                message.Color
-            ));
+                if (breakAt <= 0)
+                    breakAt = maxChars;
 
-            remaining = remaining.Substring(
-                breakAt == maxChars ? breakAt : breakAt + 1
+                lines.Add((
+                    remaining.Substring(0, breakAt),
+                    message.Color
+                ));
+
+                remaining = remaining.Substring(
+                    breakAt == maxChars ? breakAt : breakAt + 1
+                );
+            }
+
+            if (remaining.Length > 0)
+            {
+                lines.Add((remaining, message.Color));
+            }
+        }
+
+        // Keep only the newest lines that fit.
+        int start = Math.Max(0, lines.Count - maxLines);
+
+        for (int i = start; i < lines.Count; i++)
+        {
+            var line = lines[i];
+
+            using var brush = new SolidBrush(line.Color);
+            g.DrawString(
+                line.Text,
+                _font,
+                brush,
+                x0 + 6,
+                (i - start) * _cellHeight
             );
         }
-
-        if (remaining.Length > 0)
-        {
-            lines.Add((remaining, message.Color));
-        }
     }
 
-    // Keep only the newest lines that fit.
-    int start = Math.Max(0, lines.Count - maxLines);
-
-    for (int i = start; i < lines.Count; i++)
-    {
-        var line = lines[i];
-
-        using var brush = new SolidBrush(line.Color);
-        g.DrawString(
-            line.Text,
-            _font,
-            brush,
-            x0 + 6,
-            (i - start) * _cellHeight
-        );
-    }
-}
     private void DrawStatusBar(Graphics g)
     {
         int y = _game.Map.Height * _cellHeight;
@@ -220,10 +230,15 @@ public class GameForm : Form
         g.FillRectangle(bg, 0, y, ClientSize.Width, StatusBarHeight);
 
         using var textBrush = new SolidBrush(Color.White);
-        string status = $"Depth {_game.Depth}   " +
-                        $"HP {_game.Player.Health}/{_game.Player.MaxHealth}   " +
-                        $"Items: {_game.Player.Inventory.Count}   " +
-                        "WASD move, G grab, ,/. stairs, Space wait, Esc quit, Q quaff";
+
+        // While choosing an item, the prompt replaces the usual status text.
+        string status = _input.Prompt ??
+            $"Depth {_game.Depth}  " +
+            $"HP {_game.Player.Health}/{_game.Player.MaxHealth}  " +
+            $"AC {_game.Player.ArmorClass}  " +
+            $"Inv: {_game.Player.Inventory.Count}  " +
+            "WASD G grab Q quaff E equip P put ,/. stairs Space";
+
         g.DrawString(status, _font, textBrush, 6, y + 4);
     }
 

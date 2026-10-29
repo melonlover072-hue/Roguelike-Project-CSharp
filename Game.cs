@@ -73,13 +73,23 @@ public class Game
         return true;
     }
 
-    /// <summary>Shared melee resolution for the player and monsters.</summary>
+    /// <summary>Shared melee resolution for the player and monsters:
+    /// 1d20 + AttackBonus against ArmorClass to hit, then a damage roll.</summary>
     public void ResolveMelee(Entity attacker, Entity target)
     {
         string attackerName = attacker is Player ? "You" : attacker.Name;
         string targetName = target is Player ? "you" : target.Name;
 
-        target.Health -= attacker.AttackPower;
+        int roll = _rng.Next(1, 21); // 1d20
+        if (roll + attacker.AttackBonus < target.ArmorClass)
+        {
+            string missVerb = attacker is Player ? "miss" : "misses";
+            Log.Add($"{attackerName} {missVerb} {targetName}.", Color.Gray);
+            return;
+        }
+
+        int damage = _rng.Next(attacker.DamageMin, attacker.DamageMax + 1);
+        target.Health -= damage;
 
         if (!target.IsAlive)
         {
@@ -90,7 +100,7 @@ public class Game
 
         string verb = attacker is Player ? "hit" : "hits";
         var color = target is Player ? Color.OrangeRed : Color.White;
-        Log.Add($"{attackerName} {verb} {targetName} for {attacker.AttackPower} damage.", color);
+        Log.Add($"{attackerName} {verb} {targetName} for {damage} damage.", color);
     }
 
     /// <summary>Attempts to move the player up or down a dungeon level.</summary>
@@ -146,9 +156,9 @@ public class Game
         var (map, _, stairsUp, stairsDown) = generator.Generate(width: 60, height: 25);
         var level = new Level(map, stairsUp, stairsDown);
 
-        // A small bestiary showing off the initiative system: normal goblins,
-        // fast bats that act twice per round, and slow ogres that only act
-        // every other round. Monster count grows a little with depth.
+        // A small bestiary exercising the initiative and combat systems:
+        // goblins are average, bats are fast but flimsy, ogres are slow
+        // bruisers that are easy to hit but hit back hard.
         int monsterCount = 3 + depth;
         for (int i = 0; i < monsterCount; i++)
         {
@@ -157,22 +167,72 @@ public class Game
 
             level.Entities.Add(_rng.Next(10) switch
             {
-                0 or 1 => new Monster(x, y, "Ogre", 'O', health: 10, attackPower: 4, speed: 50, color: Color.DarkOrange),
-                <= 5 => new Monster(x, y, "Bat", 'b', health: 3, attackPower: 1, speed: 200, color: Color.LightSteelBlue),
+                0 or 1 => new Monster(x, y, "Ogre", 'O',
+                    health: 12, damageMin: 3, damageMax: 6,
+                    attackBonus: 2, armorClass: 9,
+                    speed: 50, color: Color.DarkOrange),
+                <= 5 => new Monster(x, y, "Bat", 'b',
+                    health: 3, damageMin: 1, damageMax: 2,
+                    attackBonus: 2, armorClass: 13,
+                    speed: 200, color: Color.LightSteelBlue),
                 _ => new Monster(x, y), // Goblin
             });
         }
 
-        // A few potions scattered on the floor, ready for PickUpCommand.
-        for (int i = 0; i < 5; i++)
+        // Scattered loot: mostly consumables, with weapons and armor mixed
+        // in. Deeper floors see better gear.
+        for (int i = 0; i < 6; i++)
         {
             if (!TryFindSpawn(map, level, stairsUp, out int x, out int y))
                 break;
 
-            level.Items.Add(new Item("Health Potion", '!', Color.Magenta, healAmount: 6) { X = x, Y = y });
+            Item item = CreateLoot(depth);
+            item.X = x;
+            item.Y = y;
+            level.Items.Add(item);
         }
 
         return level;
+    }
+
+    private Item CreateLoot(int depth) => _rng.Next(10) switch
+    {
+        5 or 6 => CreateWeapon(depth),
+        7 or 8 => CreateArmor(depth),
+        _ => CreatePotion(), // everything else
+    };
+
+    private Item CreatePotion() => _rng.Next(4) switch
+    {
+        0 => new Item("Greater Health Potion", '!', Color.Fuchsia, healAmount: 15),
+        1 => new Item("Potion of Vitality", '!', Color.DeepPink, healAmount: 3, maxHealthBonus: 3),
+        _ => new Item("Health Potion", '!', Color.Magenta, healAmount: 6),
+    };
+
+    private Item CreateWeapon(int depth)
+    {
+        if (depth >= 3 && _rng.Next(2) == 0)
+            return new Item("Battle Axe", '(', Color.Silver,
+                slot: EquipmentSlot.Weapon, damageMin: 4, damageMax: 9);
+
+        return _rng.Next(2) == 0
+            ? new Item("Rusty Dagger", '(', Color.LightGray,
+                slot: EquipmentSlot.Weapon, damageMin: 2, damageMax: 4)
+            : new Item("Short Sword", '(', Color.White,
+                slot: EquipmentSlot.Weapon, damageMin: 3, damageMax: 6);
+    }
+
+    private Item CreateArmor(int depth)
+    {
+        if (depth >= 3 && _rng.Next(2) == 0)
+            return new Item("Chain Mail", '[', Color.Silver,
+                slot: EquipmentSlot.Armor, armorBonus: 4);
+
+        return _rng.Next(2) == 0
+            ? new Item("Cloth Armor", '[', Color.Tan,
+                slot: EquipmentSlot.Armor, armorBonus: 1)
+            : new Item("Leather Armor", '[', Color.SaddleBrown,
+                slot: EquipmentSlot.Armor, armorBonus: 2);
     }
 
     /// <summary>One tick of the initiative clock: everyone gains energy,
